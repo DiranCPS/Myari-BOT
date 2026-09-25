@@ -5,6 +5,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const rows = document.querySelectorAll('.command-row');
   const loginModal = document.querySelector('#login-modal');
   const loginForm = document.querySelector('#login-form');
+  const setupForm = document.querySelector('#account-setup-form');
+  const setupKeyInput = document.querySelector('#account-setup-key');
+  const setupError = document.querySelector('#account-setup-error');
+  const generatedCredentials = document.querySelector('#generated-credentials');
+  const generatedDeveloperId = document.querySelector('#generated-developer-id');
+  const generatedDeveloperPassword = document.querySelector('#generated-developer-password');
   const developerIdInput = document.querySelector('#developer-id');
   const passwordInput = document.querySelector('#developer-password');
   const loginError = document.querySelector('#login-error');
@@ -29,8 +35,16 @@ document.addEventListener('DOMContentLoaded', () => {
   const closeLogin = () => {
     loginModal.hidden = true;
     loginError.textContent = '';
+    setupError.textContent = '';
     developerIdInput.value = '';
     passwordInput.value = '';
+    setupKeyInput.value = '';
+    generatedDeveloperId.textContent = '';
+    generatedDeveloperPassword.textContent = '';
+    loginForm.hidden = false;
+    setupForm.hidden = true;
+    generatedCredentials.hidden = true;
+    document.querySelector('#open-account-setup').hidden = false;
   };
 
   const openLogin = () => {
@@ -55,6 +69,71 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   document.querySelector('#developer-login-button').addEventListener('click', openLogin);
+  document.querySelector('#open-account-setup').addEventListener('click', () => {
+    loginForm.hidden = true;
+    document.querySelector('#open-account-setup').hidden = true;
+    setupForm.hidden = false;
+    setupKeyInput.focus();
+  });
+  document.querySelector('#back-to-login').addEventListener('click', () => {
+    setupForm.hidden = true;
+    loginForm.hidden = false;
+    document.querySelector('#open-account-setup').hidden = false;
+    setupError.textContent = '';
+    setupKeyInput.value = '';
+    developerIdInput.focus();
+  });
+  setupForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const submitButton = setupForm.querySelector('[type="submit"]');
+    submitButton.disabled = true;
+    setupError.textContent = '계정 생성 중...';
+    try {
+      const response = await fetch(`${apiBaseUrl}/api/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ setup_key: setupKeyInput.value }),
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        setupError.textContent = response.status === 429
+          ? '시도 횟수가 초과되었습니다. 잠시 후 다시 시도해주세요.'
+          : response.status === 503
+            ? '계정 생성 기능이 서버에 설정되지 않았습니다.'
+            : response.status === 403
+              ? '초기 설정 키가 올바르지 않습니다.'
+              : '계정을 생성하지 못했습니다. 서버 상태를 확인해주세요.';
+        return;
+      }
+      generatedDeveloperId.textContent = result.developer_id;
+      generatedDeveloperPassword.textContent = result.password;
+      setupKeyInput.value = '';
+      setupForm.hidden = true;
+      generatedCredentials.hidden = false;
+    } catch {
+      setupError.textContent = '인증 서버에 연결할 수 없습니다. API 주소와 서버 상태를 확인해주세요.';
+    } finally {
+      submitButton.disabled = false;
+    }
+  });
+  document.querySelector('#copy-credentials').addEventListener('click', async () => {
+    const copyStatus = document.querySelector('#copy-status');
+    try {
+      await navigator.clipboard.writeText(
+        `개발자 ID: ${generatedDeveloperId.textContent}\n비밀번호: ${generatedDeveloperPassword.textContent}`,
+      );
+      copyStatus.textContent = '계정 정보를 복사했습니다.';
+    } catch {
+      copyStatus.textContent = '복사할 수 없습니다. 화면에 표시된 정보를 직접 저장해주세요.';
+    }
+  });
+  document.querySelector('#login-with-generated').addEventListener('click', () => {
+    developerIdInput.value = generatedDeveloperId.textContent;
+    passwordInput.value = generatedDeveloperPassword.textContent;
+    generatedCredentials.hidden = true;
+    loginForm.hidden = false;
+    loginForm.requestSubmit();
+  });
   inviteLinks.forEach((link) => {
     link.addEventListener('click', (event) => {
       if (!link.classList.contains('is-unlocked')) {

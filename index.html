@@ -97,7 +97,26 @@
         <p class="login-error" id="login-error" role="alert"></p>
         <button class="button button-primary login-submit" type="submit">로그인 <i data-lucide="arrow-right"></i></button>
       </form>
-      <p class="demo-note">계정은 봇 오너가 Discord에서 발급합니다.</p>
+      <button class="account-setup-link" id="open-account-setup" type="button">새 개발자 계정 만들기</button>
+      <form id="account-setup-form" hidden>
+        <label for="account-setup-key">초기 설정 키</label>
+        <div class="login-field"><input id="account-setup-key" type="password" autocomplete="off" placeholder="서버 관리자가 설정한 키"></div>
+        <p class="generated-note">새 계정을 만들면 이전 개발자 계정은 즉시 사용할 수 없게 됩니다.</p>
+        <p class="login-error" id="account-setup-error" role="alert"></p>
+        <button class="button button-primary login-submit" type="submit">계정 생성 <i data-lucide="user-round-plus"></i></button>
+        <button class="account-setup-link" id="back-to-login" type="button">로그인으로 돌아가기</button>
+      </form>
+      <section class="generated-credentials" id="generated-credentials" hidden aria-live="polite">
+        <p class="eyebrow">ACCOUNT CREATED</p>
+        <h3>로그인 정보를 저장하세요</h3>
+        <p class="generated-note">비밀번호는 이번에만 표시됩니다.</p>
+        <label>개발자 ID</label><output id="generated-developer-id"></output>
+        <label>비밀번호</label><output id="generated-developer-password"></output>
+        <p class="login-error" id="copy-status" role="status"></p>
+        <button class="button button-primary login-submit" id="copy-credentials" type="button">계정 정보 복사 <i data-lucide="copy"></i></button>
+        <button class="account-setup-link" id="login-with-generated" type="button">이 계정으로 로그인</button>
+      </section>
+      <p class="demo-note">계정 생성에는 서버 설정 키가 필요합니다.</p>
     </section>
   </div>
   <script src="https://unpkg.com/lucide@latest"></script>
