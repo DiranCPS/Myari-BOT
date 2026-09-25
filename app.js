@@ -10,8 +10,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const loginError = document.querySelector('#login-error');
   const developerPanel = document.querySelector('#developer-panel');
   const inviteLinks = document.querySelectorAll('.bot-invite-link');
-  const testDeveloperId = 'developer';
-  const testPassword = 'dev2026!';
+  const configuredApiUrl = document.querySelector('meta[name="bot-api-base-url"]')?.content.trim();
+  const apiBaseUrl = (configuredApiUrl || window.location.origin).replace(/\/$/, '');
 
   tabs.forEach((tab) => {
     tab.addEventListener('click', () => {
@@ -46,6 +46,14 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   };
 
+  const deactivateInviteLinks = () => {
+    inviteLinks.forEach((link) => {
+      link.href = link.dataset.lockedHref || '#';
+      link.setAttribute('aria-label', '개발자 로그인 후 봇 초대');
+      link.classList.remove('is-unlocked');
+    });
+  };
+
   document.querySelector('#developer-login-button').addEventListener('click', openLogin);
   inviteLinks.forEach((link) => {
     link.addEventListener('click', (event) => {
@@ -64,19 +72,40 @@ document.addEventListener('DOMContentLoaded', () => {
     passwordInput.type = passwordInput.type === 'password' ? 'text' : 'password';
     button.setAttribute('aria-label', passwordInput.type === 'password' ? '비밀번호 표시' : '비밀번호 숨기기');
   });
-  loginForm.addEventListener('submit', (event) => {
+  loginForm.addEventListener('submit', async (event) => {
     event.preventDefault();
-    if (developerIdInput.value.trim() !== testDeveloperId || passwordInput.value !== testPassword) {
-      loginError.textContent = '개발자 ID 또는 비밀번호가 올바르지 않습니다.';
-      passwordInput.focus();
-      return;
+    const submitButton = loginForm.querySelector('[type="submit"]');
+    submitButton.disabled = true;
+    loginError.textContent = '로그인 확인 중...';
+    try {
+      const response = await fetch(`${apiBaseUrl}/api/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          developer_id: developerIdInput.value.trim(),
+          password: passwordInput.value,
+        }),
+      });
+      if (!response.ok) {
+        loginError.textContent = response.status === 429
+          ? '로그인 시도가 너무 많습니다. 잠시 후 다시 시도해주세요.'
+          : response.status === 503
+            ? '개발자 계정이 아직 발급되지 않았습니다.'
+            : '개발자 ID 또는 비밀번호가 올바르지 않습니다.';
+        return;
+      }
+      activateInviteLinks();
+      closeLogin();
+      developerPanel.hidden = false;
+      developerPanel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } catch {
+      loginError.textContent = '인증 서버에 연결할 수 없습니다. API 주소와 서버 상태를 확인해주세요.';
+    } finally {
+      submitButton.disabled = false;
     }
-    activateInviteLinks();
-    closeLogin();
-    developerPanel.hidden = false;
-    developerPanel.scrollIntoView({ behavior: 'smooth', block: 'center' });
   });
   document.querySelector('#developer-logout').addEventListener('click', () => {
     developerPanel.hidden = true;
+    deactivateInviteLinks();
   });
 });
