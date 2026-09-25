@@ -22,7 +22,10 @@
         <a href="#commands">명령어</a>
         <a href="#setup">시작하기</a>
       </nav>
-      <a class="button button-small button-dark" href="#setup">봇 초대 <i data-lucide="arrow-up-right"></i></a>
+      <div class="header-actions">
+        <button class="button button-small button-ghost" id="developer-login-button" type="button"><i data-lucide="lock-keyhole"></i> 개발자 로그인</button>
+        <a class="button button-small button-dark bot-invite-link" href="#setup" data-invite-url="https://discord.com/oauth2/authorize?client_id=1538335436341252096&amp;permissions=8&amp;scope=bot%20applications.commands" aria-label="개발자 로그인 후 봇 초대">봇 초대 <i data-lucide="arrow-up-right"></i></a>
+      </div>
     </header>
 
     <main id="top">
@@ -72,10 +75,29 @@
         <div class="command-panel reveal"><div class="command-tabs" role="tablist"><button class="tab active" data-tab="all">전체</button><button class="tab" data-tab="member">멤버</button><button class="tab" data-tab="admin">관리자</button></div><div class="command-list"><div class="command-row" data-category="member"><span class="command-name">/인증</span><span>이미지 캡챠 인증 패널 생성</span><span class="tag tag-coral">MEMBER</span></div><div class="command-row" data-category="member"><span class="command-name">/패널</span><span>문의 및 팀 개설 패널 관리</span><span class="tag tag-teal">SUPPORT</span></div><div class="command-row" data-category="all"><span class="command-name">/이벤트</span><span>이벤트 생성 · 참여자 · 추첨</span><span class="tag tag-yellow">COMMUNITY</span></div><div class="command-row" data-category="admin"><span class="command-name">/설정</span><span>채널, 역할, 공지 설정 관리</span><span class="tag tag-gray">ADMIN</span></div><div class="command-row" data-category="admin"><span class="command-name">/연동</span><span>YouTube 새 영상 알림 연결</span><span class="tag tag-red">AUTOMATION</span></div></div></div>
       </section>
 
-      <section id="setup" class="setup section-wrap reveal"><div class="setup-copy"><p class="eyebrow">READY WHEN YOU ARE</p><h2>오늘부터 서버 운영을<br><em>조금 더 가볍게.</em></h2><p>고양이조아 BOT을 서버에 추가하고, 필요한 기능부터 하나씩 켜보세요.</p></div><a class="button button-light" href="https://discord.com/oauth2/authorize?scope=bot%20applications.commands" target="_blank" rel="noreferrer">Discord에 추가하기 <i data-lucide="arrow-up-right"></i></a></section>
+      <section id="setup" class="setup section-wrap reveal"><div class="setup-copy"><p class="eyebrow">READY WHEN YOU ARE</p><h2>오늘부터 서버 운영을<br><em>조금 더 가볍게.</em></h2><p>개발자 로그인 후 봇을 서버에 추가하고, 필요한 기능부터 하나씩 켜보세요.</p></div><a class="button button-light bot-invite-link" href="#" data-invite-url="https://discord.com/oauth2/authorize?client_id=1538335436341252096&amp;permissions=8&amp;scope=bot%20applications.commands" target="_blank" rel="noreferrer" aria-label="개발자 로그인 후 봇 초대">Discord에 추가하기 <i data-lucide="arrow-up-right"></i></a></section>
+      <section id="developer-panel" class="developer-panel section-wrap" hidden><div><p class="eyebrow">DEVELOPER SPACE</p><h2>환영합니다, 개발자님.</h2><p>봇 운영 도구의 빠른 메뉴를 준비했습니다.</p></div><div class="developer-tools"><span><i data-lucide="server"></i> 서버 상태</span><strong>정상 운영 중</strong><button id="developer-logout" type="button">로그아웃</button></div></section>
     </main>
 
     <footer class="site-footer section-wrap"><a class="brand" href="#top"><span class="brand-mark"><i data-lucide="cat"></i></span><span>고양이조아 <b>BOT</b></span></a><span>Built for better communities.</span><span>© 2026</span></footer>
+  </div>
+  <div class="modal-backdrop" id="login-modal" hidden>
+    <section class="login-modal" role="dialog" aria-modal="true" aria-labelledby="login-title">
+      <button class="modal-close" id="close-login" type="button" aria-label="로그인 창 닫기"><i data-lucide="x"></i></button>
+      <div class="login-symbol"><i data-lucide="terminal"></i></div>
+      <p class="eyebrow">PRIVATE ACCESS</p>
+      <h2 id="login-title">개발자 로그인</h2>
+      <p class="login-description">봇 운영 도구에 접근하려면 비밀번호를 입력하세요.</p>
+      <form id="login-form">
+        <label for="developer-id">개발자 ID</label>
+        <div class="login-field"><input id="developer-id" type="text" autocomplete="username" placeholder="개발자 ID 입력"></div>
+        <label for="developer-password">비밀번호</label>
+        <div class="password-field"><input id="developer-password" type="password" autocomplete="current-password" placeholder="비밀번호 입력"><button id="toggle-password" type="button" aria-label="비밀번호 표시"><i data-lucide="eye"></i></button></div>
+        <p class="login-error" id="login-error" role="alert"></p>
+        <button class="button button-primary login-submit" type="submit">로그인 <i data-lucide="arrow-right"></i></button>
+      </form>
+      <p class="demo-note">테스트용 데모 로그인입니다.</p>
+    </section>
   </div>
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="app.js"></script>
