@@ -1,3 +1,4 @@
+.login-error{height:auto;min-height:16px;line-height:1.5}.login-submit:disabled{opacity:.65;cursor:wait}
 .login-field{display:flex;border:1px solid var(--line);border-radius:7px;background:#fff;overflow:hidden;margin-bottom:15px}.login-field:focus-within{border-color:var(--coral);box-shadow:0 0 0 3px rgba(239,114,92,.12)}.login-field input{width:100%;border:0;outline:0;background:transparent;padding:13px;font:14px 'DM Sans';color:var(--ink)}.bot-invite-link:not(.is-unlocked){opacity:.78}.bot-invite-link:not(.is-unlocked) svg{opacity:.7}
 .developer-panel{margin-top:24px!important}
 /* Developer access */
