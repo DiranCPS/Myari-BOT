@@ -1,76 +1,39 @@
-# 무료 API 배포 안내 (Cloudflare Workers + D1)
+# Discord 로그인과 블로그 연결 (Supabase)
 
-이 구성은 Render 웹서비스와 유료 영속 디스크 대신 Cloudflare Workers와 D1을 사용합니다. 두 제품은 무료 사용량 한도 내에서 시작할 수 있습니다. Cloudflare 계정 및 사이트 도메인 등록 비용은 별도이며, 무료 한도를 넘으면 제한 또는 요금이 적용될 수 있습니다.
+Supabase가 Discord OAuth 로그인, 세션, 게시물 데이터베이스를 관리합니다. Supabase 무료 사용량에서 시작할 수 있으며, 무료 플랜의 한도와 비활성 프로젝트 정책은 바뀔 수 있습니다. 사이트는 GitHub Pages에 그대로 배포됩니다.
 
-## 1. 필요한 것
+## 1. Supabase 프로젝트 만들기
 
-- Cloudflare 계정
-- `myaribot.mcv.kr` DNS를 관리할 수 있는 권한
-- Node.js와 npm이 설치된 PC
-- Discord 애플리케이션의 OAuth2 Client Secret
+1. [Supabase](https://supabase.com)에 로그인하고 새 프로젝트를 만듭니다.
+2. 프로젝트 생성 후 **SQL Editor**에서 `supabase/schema.sql` 전체를 실행합니다. 이 스크립트는 게시물 테이블과 권한 정책을 만들고, 허용 Discord ID 세 개를 등록합니다.
+3. **Project Settings → API**에서 Project URL과 `anon`/publishable key를 복사해 `supabase-config.js`의 빈 문자열 두 곳에 입력합니다. 이 anon 키는 브라우저에 공개되는 키입니다. 보안을 담당하는 것은 SQL의 RLS 정책이므로 `service_role` 키는 절대 브라우저 파일에 넣지 마세요.
 
-## 2. 도메인의 DNS 준비
+## 2. Discord 로그인 제공자 연결
 
-Worker를 `api.myaribot.mcv.kr`로 연결하려면 `mcv.kr` DNS 영역이 Cloudflare에서 관리되어야 합니다. 도메인이 아직 다른 DNS 업체를 사용한다면 Cloudflare에 영역을 추가하고, 기존 DNS 레코드가 모두 옮겨졌는지 확인한 뒤에만 도메인 업체의 네임서버를 Cloudflare가 안내한 값으로 변경하세요. 레코드가 빠진 채 네임서버를 바꾸면 현재 홈페이지나 메일이 중단될 수 있습니다.
+1. Supabase에서 **Authentication → Providers → Discord**를 열고 Discord provider를 켭니다.
+2. Supabase 화면에 표시된 Callback URL을 복사합니다. 일반적으로 다음 모양입니다.
+   `https://<project-ref>.supabase.co/auth/v1/callback`
+3. [Discord Developer Portal](https://discord.com/developers/applications)의 해당 애플리케이션에서 **OAuth2 → General → Redirects**에 그 Callback URL을 등록합니다.
+4. Discord의 Client ID와 Client Secret을 Supabase Discord provider 설정에 입력하고 저장합니다. Secret은 Supabase 대시보드에만 입력하고 GitHub나 채팅에 올리지 마세요.
+5. Supabase의 **Authentication → URL Configuration**에서 Site URL을 `https://myaribot.mcv.kr`로 설정하고 Redirect URLs에 `https://myaribot.mcv.kr/**`를 추가합니다.
 
-Cloudflare가 이미 DNS를 관리 중이라면 이 단계를 건너뛰세요.
+## 3. 사이트 배포 및 확인
 
-## 3. Worker와 D1 데이터베이스 만들기
+`supabase-config.js`를 저장소에 커밋·푸시하면 GitHub Pages에 반영됩니다. 로그인한 뒤 허용 목록에 없는 계정은 편집 권한이 부여되지 않습니다. 게시물의 초안 열람과 생성·수정은 데이터베이스 RLS 정책으로 제한합니다.
 
-PowerShell에서 저장소의 `api` 폴더로 이동한 다음 Wrangler에 로그인합니다.
+초대 링크 버튼은 허용된 계정의 브라우저에서만 열리도록 잠겨 있습니다. 그러나 Discord 초대 주소 자체를 완전히 비공개로 만들 수는 없습니다. 다른 사람이 주소를 직접 구성해 초대하는 것을 막으려면 Discord Developer Portal에서 **Public Bot**을 끄고 허용 사용자를 애플리케이션 팀에 추가하세요. 현재 초대 권한은 `Administrator`이므로, 공개 전에 Discord의 Bot Permissions에서 꼭 필요한 권한만 선택하는 것을 권장합니다.
 
-```powershell
-cd C:\Users\user\Downloads\Myari-BOT\api
-npx wrangler login
-npx wrangler d1 create myari-blog
+## 허용 사용자 변경
+
+Supabase SQL Editor에서 다음처럼 허용 ID를 추가하거나 삭제합니다.
+
+```sql
+INSERT INTO public.site_allowed_discord_users (discord_user_id)
+VALUES ('DISCORD_USER_ID')
+ON CONFLICT DO NOTHING;
+
+DELETE FROM public.site_allowed_discord_users
+WHERE discord_user_id = 'DISCORD_USER_ID';
 ```
 
-`d1 create`가 출력한 데이터베이스 ID를 `wrangler.toml`의 `database_id`에 입력하세요. 그 다음 스키마를 만들고 Worker를 배포합니다.
-
-```powershell
-npx wrangler d1 migrations apply myari-blog --remote
-npx wrangler deploy
-```
-
-첫 실행 시 Wrangler가 `wrangler` 도구 설치를 확인할 수 있습니다. 안내에 동의하면 됩니다.
-
-## 4. 비밀값 설정
-
-Discord Developer Portal의 해당 애플리케이션에서 OAuth2 Client Secret을 준비하세요. 다음 명령을 각각 실행하고, 프롬프트에 비밀값을 입력합니다. 이 값은 저장소에 넣지 마세요.
-
-```powershell
-npx wrangler secret put DISCORD_CLIENT_SECRET
-npx wrangler secret put BLOG_SESSION_SECRET
-```
-
-`BLOG_SESSION_SECRET`에는 비밀번호 관리자에서 생성한 임의의 긴 문자열을 사용하세요. Discord Client Secret은 GitHub에 올리거나 채팅으로 보내지 마세요. 비밀값을 등록한 후 다시 배포합니다.
-
-```powershell
-npx wrangler deploy
-```
-
-## 5. API 도메인 연결
-
-Cloudflare Dashboard에서 **Workers & Pages → myari-blog-api → Settings → Domains & Routes → Add → Custom Domain**으로 이동해 `api.myaribot.mcv.kr`을 추가하세요. TLS 인증서가 활성화될 때까지 기다립니다.
-
-Discord Developer Portal의 **OAuth2 → Redirects**에도 아래 주소가 등록되어 있는지 확인하세요.
-
-```text
-https://api.myaribot.mcv.kr/api/auth/discord/callback
-```
-
-아래 주소를 열어 `{"status":"ok"}`가 보이면 API가 준비된 것입니다.
-
-```text
-https://api.myaribot.mcv.kr/healthz
-```
-
-## 6. 초대 권한 주의사항
-
-사이트와 API는 지정된 Discord 사용자 ID 세 개만 허용하도록 설정되어 있습니다. 하지만 Discord 초대 URL을 직접 만드는 것을 막으려면 Developer Portal에서 **Public Bot**을 끄고, 허용할 계정을 애플리케이션 팀에 추가해야 합니다. 봇 초대 권한은 기존 설정대로 `Administrator`입니다. 실제 공개 전에 Discord 권한 화면에서 필요한 권한만 주는 것을 권장합니다.
-
-## 로컬 테스트
-
-```powershell
-npm test
-```
+웹페이지의 로그인 버튼은 UI 편의용 잠금일 뿐입니다. 글 작성 권한은 항상 RLS 정책이 서버에서 검사합니다.

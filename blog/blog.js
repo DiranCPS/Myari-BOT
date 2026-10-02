@@ -1,8 +1,7 @@
 document.addEventListener('DOMContentLoaded', async () => {
   if (window.lucide) lucide.createIcons();
 
-  const apiBaseUrl = (document.querySelector('meta[name="bot-api-base-url"]')?.content.trim()
-    || window.location.origin).replace(/\/$/, '');
+  const supabaseClient = window.myariSupabase;
   const grid = document.querySelector('#post-grid');
   const reader = document.querySelector('#post-reader');
   const editor = document.querySelector('#post-editor');
@@ -84,30 +83,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     notice.textContent = message;
   };
 
-  const callApi = async (path, options = {}) => {
-    const response = await fetch(`${apiBaseUrl}${path}`, {
-      credentials: 'include',
-      cache: 'no-store',
-      ...options,
-      headers: {
-        ...(options.body ? { 'Content-Type': 'application/json' } : {}),
-        ...options.headers,
-      },
-    });
-    if (!response.ok) {
-      const error = new Error(response.status === 401
-        ? 'Discord 로그인이 필요합니다.'
-        : response.status === 403
-          ? '이 작업은 허용된 Discord 계정만 할 수 있습니다.'
-          : response.status === 404
-            ? '게시물을 찾을 수 없습니다.'
-            : `요청에 실패했습니다. (${response.status})`);
-      error.status = response.status;
-      throw error;
-    }
-    return response.status === 204 ? null : response.json();
-  };
-
   const renderPostList = (posts) => {
     postsBySlug.clear();
     for (const post of posts) postsBySlug.set(post.slug, post);
@@ -130,20 +105,41 @@ document.addEventListener('DOMContentLoaded', async () => {
   };
 
   const loadPosts = async () => {
+    if (!supabaseClient) {
+      grid.innerHTML = '<div class="empty-posts"><i data-lucide="settings"></i><h3>블로그 연결 설정이 필요합니다.</h3><p>사이트 관리자가 Supabase 설정을 완료해야 게시물을 표시할 수 있어요.</p></div>';
+      if (window.lucide) lucide.createIcons();
+      setNotice('Supabase 프로젝트 연결 전입니다.');
+      return;
+    }
     try {
-      const posts = await callApi('/api/blog/posts');
+      const { data: posts, error } = await supabaseClient
+        .from('posts')
+        .select('*')
+        .order('published_at', { ascending: false, nullsFirst: false })
+        .order('updated_at', { ascending: false });
+      if (error) throw error;
       renderPostList(posts);
       setNotice('');
-    } catch (error) {
-      grid.innerHTML = '<div class="empty-posts"><i data-lucide="wifi-off"></i><h3>게시물을 불러오지 못했습니다.</h3><p>블로그 서버 연결을 확인한 뒤 다시 시도해주세요.</p><button class="post-open" id="retry-posts" type="button">다시 시도 <i data-lucide="rotate-cw"></i></button></div>';
+    } catch {
+      grid.innerHTML = '<div class="empty-posts"><i data-lucide="wifi-off"></i><h3>게시물을 불러오지 못했습니다.</h3><p>Supabase 프로젝트 연결을 확인한 뒤 다시 시도해주세요.</p><button class="post-open" id="retry-posts" type="button">다시 시도 <i data-lucide="rotate-cw"></i></button></div>';
       if (window.lucide) lucide.createIcons();
-      setNotice('블로그 서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.');
+      setNotice('게시물을 불러오지 못했습니다. Supabase 설정을 확인해주세요.');
     }
   };
 
   const openPost = async (slug) => {
     try {
-      const post = postsBySlug.get(slug) || await callApi(`/api/blog/posts/${encodeURIComponent(slug)}`);
+      let post = postsBySlug.get(slug);
+      if (!post) {
+        const { data, error } = await supabaseClient
+          .from('posts')
+          .select('*')
+          .eq('slug', slug)
+          .maybeSingle();
+        if (error) throw error;
+        if (!data) throw new Error('게시물을 찾을 수 없습니다.');
+        post = data;
+      }
       grid.hidden = true;
       editor.hidden = true;
       reader.hidden = false;
@@ -157,7 +153,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       history.replaceState({}, '', `${location.pathname}?post=${encodeURIComponent(slug)}`);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (error) {
-      setNotice(error.message);
+      setNotice(error.message || '게시물을 열지 못했습니다.');
     }
   };
 
@@ -207,14 +203,28 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   loginButton.addEventListener('click', () => {
-    location.assign(`${apiBaseUrl}/api/auth/discord`);
+    if (!supabaseClient) {
+      setNotice('Supabase 프로젝트 연결 전입니다.');
+      return;
+    }
+    supabaseClient.auth.signInWithOAuth({
+      provider: 'discord',
+      options: {
+        scopes: 'identify',
+        redirectTo: `${window.location.origin}/blog/`,
+      },
+    }).then(({ error }) => {
+      if (error) setNotice('Discord 로그인을 시작하지 못했습니다.');
+    });
   });
   logoutButton.addEventListener('click', async () => {
+    if (!supabaseClient) return;
     try {
-      await callApi('/api/auth/logout', { method: 'POST' });
+      const { error } = await supabaseClient.auth.signOut();
+      if (error) throw error;
       location.reload();
-    } catch (error) {
-      setNotice(error.message);
+    } catch {
+      setNotice('로그아웃하지 못했습니다.');
     }
   });
   newPostButton.addEventListener('click', () => openEditor());
@@ -237,33 +247,73 @@ document.addEventListener('DOMContentLoaded', async () => {
       status: form.elements.status.value,
     };
     try {
-      await callApi(editingSlug ? `/api/blog/posts/${encodeURIComponent(editingSlug)}` : '/api/blog/posts', {
-        method: editingSlug ? 'PUT' : 'POST',
-        body: JSON.stringify(post),
-      });
+      if (!supabaseClient) throw new Error('Supabase 프로젝트 연결 전입니다.');
+      const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+      if (userError) throw userError;
+      if (!user) throw new Error('Discord 로그인이 필요합니다.');
+      const username = user.user_metadata?.full_name
+        || user.user_metadata?.name
+        || user.user_metadata?.user_name
+        || 'Discord 사용자';
+      const postWithAuthor = { ...post, author_id: user.id, author_name: username };
+      const saveQuery = editingSlug
+        ? supabaseClient.from('posts').update(postWithAuthor).eq('slug', editingSlug)
+        : supabaseClient.from('posts').insert(postWithAuthor);
+      const { error } = await saveQuery;
+      if (error) throw error;
       closeEditor();
       await loadPosts();
       setNotice('게시물을 저장했습니다.');
     } catch (error) {
-      setNotice(error.message);
+      setNotice(error.message || '게시물을 저장하지 못했습니다.');
     } finally {
       button.disabled = false;
     }
   });
 
   document.querySelectorAll('.blog-user, #blog-logout').forEach((element) => { element.hidden = true; });
-  try {
-    const user = await callApi('/api/auth/me');
-    if (user.authorized) {
-      isAuthorized = true;
-      document.querySelector('#blog-user').textContent = user.username;
-      document.querySelector('#blog-user').hidden = false;
-      loginButton.hidden = true;
-      logoutButton.hidden = false;
-      newPostButton.hidden = false;
+
+  const updateEditor = async (session) => {
+    isAuthorized = false;
+    const user = session?.user || null;
+    document.querySelector('#blog-user').hidden = true;
+    loginButton.hidden = false;
+    logoutButton.hidden = true;
+    newPostButton.hidden = true;
+    if (!user || !supabaseClient) return;
+
+    const { data: authorized, error } = await supabaseClient.rpc('is_site_editor');
+    if (error) throw error;
+    if (!authorized) {
+      setNotice('허용 목록에 등록된 Discord 계정만 글을 작성할 수 있습니다.');
+      await supabaseClient.auth.signOut();
+      return;
     }
-  } catch {
-    // The public article list remains available when there is no signed-in editor.
+    isAuthorized = true;
+    const username = user.user_metadata?.full_name
+      || user.user_metadata?.name
+      || user.user_metadata?.user_name
+      || 'Discord 사용자';
+    document.querySelector('#blog-user').textContent = username;
+    document.querySelector('#blog-user').hidden = false;
+    loginButton.hidden = true;
+    logoutButton.hidden = false;
+    newPostButton.hidden = false;
+  };
+
+  if (supabaseClient) {
+    try {
+      const { data: { session }, error } = await supabaseClient.auth.getSession();
+      if (error) throw error;
+      await updateEditor(session);
+    } catch {
+      setNotice('로그인 상태를 확인하지 못했습니다.');
+    }
+    supabaseClient.auth.onAuthStateChange((_event, session) => {
+      window.setTimeout(() => {
+        updateEditor(session).catch(() => setNotice('로그인 권한을 확인하지 못했습니다.'));
+      }, 0);
+    });
   }
 
   await loadPosts();

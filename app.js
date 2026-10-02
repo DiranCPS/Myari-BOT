@@ -6,8 +6,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const developerPanel = document.querySelector('#developer-panel');
   const loginButton = document.querySelector('#developer-login-button');
   const inviteLinks = document.querySelectorAll('.bot-invite-link');
-  const apiBaseUrl = (document.querySelector('meta[name="bot-api-base-url"]')?.content.trim()
-    || window.location.origin).replace(/\/$/, '');
+  const supabaseClient = window.myariSupabase;
   let currentUser = null;
 
   tabs.forEach((tab) => {
@@ -27,9 +26,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   });
 
+  const inviteUrl = new URL('https://discord.com/oauth2/authorize');
+  inviteUrl.search = new URLSearchParams({
+    client_id: '1538335436341252096',
+    permissions: '8',
+    scope: 'bot applications.commands',
+  }).toString();
+
   const activateInviteLinks = () => {
     inviteLinks.forEach((link) => {
-      link.href = `${apiBaseUrl}/api/invite`;
+      link.href = inviteUrl.toString();
       link.removeAttribute('aria-label');
       link.classList.add('is-unlocked');
     });
@@ -47,15 +53,70 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!loginButton) return;
     loginButton.textContent = message;
     window.setTimeout(() => {
-      loginButton.textContent = 'Discord 로그인';
+      if (loginButton.textContent === message) loginButton.textContent = 'Discord 로그인';
     }, 5000);
+  };
+
+  const startLogin = async () => {
+    if (!supabaseClient) {
+      showLoginError('로그인 설정이 필요합니다');
+      return;
+    }
+    const { error } = await supabaseClient.auth.signInWithOAuth({
+      provider: 'discord',
+      options: {
+        scopes: 'identify',
+        redirectTo: `${window.location.origin}/blog/`,
+      },
+    });
+    if (error) showLoginError('Discord 로그인을 시작하지 못했습니다');
+  };
+
+  const setCurrentUser = async (session) => {
+    currentUser = null;
+    deactivateInviteLinks();
+    if (developerPanel) developerPanel.hidden = true;
+    if (loginButton) {
+      loginButton.textContent = 'Discord 로그인';
+      loginButton.removeAttribute('title');
+    }
+    if (!session?.user || !supabaseClient) return;
+
+    const { data: isEditor, error } = await supabaseClient.rpc('is_site_editor');
+    if (error) throw error;
+    if (!isEditor) {
+      await supabaseClient.auth.signOut();
+      showLoginError('허용되지 않은 계정입니다');
+      return;
+    }
+
+    currentUser = session.user;
+    const username = session.user.user_metadata?.full_name
+      || session.user.user_metadata?.name
+      || session.user.user_metadata?.user_name
+      || 'Discord 사용자';
+    activateInviteLinks();
+    if (developerPanel) {
+      developerPanel.hidden = false;
+      const heading = developerPanel.querySelector('h2');
+      if (heading) heading.textContent = `환영합니다, ${username}님.`;
+    }
+    if (loginButton) {
+      loginButton.textContent = `${username} · 로그아웃`;
+      loginButton.title = 'Discord 로그아웃';
+    }
+  };
+
+  const logout = async () => {
+    if (!supabaseClient) return;
+    const { error } = await supabaseClient.auth.signOut();
+    if (error) throw error;
+    await setCurrentUser(null);
   };
 
   const params = new URLSearchParams(window.location.search);
   if (params.get('auth_error') === 'not_allowed') {
     showLoginError('허용되지 않은 계정입니다');
-  } else if (params.get('auth_error') === 'login_required') {
-    showLoginError('Discord 로그인이 필요합니다');
   } else if (params.has('auth_error')) {
     showLoginError('Discord 로그인을 완료하지 못했습니다');
   }
@@ -68,72 +129,48 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   loginButton?.addEventListener('click', async () => {
     if (!currentUser) {
-      window.location.assign(`${apiBaseUrl}/api/auth/discord`);
+      await startLogin();
       return;
     }
     try {
-      const response = await fetch(`${apiBaseUrl}/api/auth/logout`, {
-        method: 'POST',
-        credentials: 'include',
-      });
-      if (!response.ok) throw new Error(`Logout failed: ${response.status}`);
-      currentUser = null;
-      if (developerPanel) developerPanel.hidden = true;
-      deactivateInviteLinks();
-      loginButton.textContent = 'Discord 로그인';
+      await logout();
     } catch {
       showLoginError('로그아웃하지 못했습니다');
     }
   });
 
   inviteLinks.forEach((link) => {
-    link.addEventListener('click', (event) => {
-      if (link.classList.contains('is-unlocked')) return;
+    link.addEventListener('click', async (event) => {
+      if (currentUser) return;
       event.preventDefault();
-      window.location.assign(`${apiBaseUrl}/api/auth/discord`);
+      await startLogin();
     });
   });
 
   document.querySelector('#developer-logout')?.addEventListener('click', async () => {
     try {
-      const response = await fetch(`${apiBaseUrl}/api/auth/logout`, {
-        method: 'POST',
-        credentials: 'include',
-      });
-      if (!response.ok) throw new Error(`Logout failed: ${response.status}`);
-      currentUser = null;
-      developerPanel.hidden = true;
-      deactivateInviteLinks();
-      if (loginButton) {
-        loginButton.textContent = 'Discord 로그인';
-        loginButton.removeAttribute('title');
-      }
+      await logout();
     } catch {
       showLoginError('로그아웃하지 못했습니다');
     }
   });
 
-  try {
-    const response = await fetch(`${apiBaseUrl}/api/auth/me`, {
-      credentials: 'include',
-      cache: 'no-store',
-    });
-    if (!response.ok) return;
-    const user = await response.json();
-    if (!user.authorized) return;
-
-    currentUser = user;
-    activateInviteLinks();
-    if (developerPanel) {
-      developerPanel.hidden = false;
-      const heading = developerPanel.querySelector('h2');
-      if (heading) heading.textContent = `환영합니다, ${user.username}님.`;
-    }
-    if (loginButton) {
-      loginButton.textContent = `${user.username} · 로그아웃`;
-      loginButton.title = 'Discord 로그아웃';
-    }
-  } catch {
-    showLoginError('로그인 서버에 연결할 수 없습니다');
+  if (!supabaseClient) {
+    showLoginError('로그인 설정이 필요합니다');
+    return;
   }
+
+  try {
+    const { data: { session }, error } = await supabaseClient.auth.getSession();
+    if (error) throw error;
+    await setCurrentUser(session);
+  } catch {
+    showLoginError('로그인 상태를 확인하지 못했습니다');
+  }
+
+  supabaseClient.auth.onAuthStateChange((_event, session) => {
+    window.setTimeout(() => {
+      setCurrentUser(session).catch(() => showLoginError('로그인 권한을 확인하지 못했습니다'));
+    }, 0);
+  });
 });
