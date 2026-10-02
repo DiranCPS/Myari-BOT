@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="인증부터 문의, 이벤트, 알림까지. 고양이조아 봇으로 Discord 서버를 더 편하게 운영하세요.">
   <meta name="theme-color" content="#111216">
-  <meta name="bot-api-base-url" content="">
+  <meta name="bot-api-base-url" content="https://api.myaribot.mcv.kr">
   <title>고양이조아 Bot — Discord를 움직이다</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -23,11 +23,12 @@
       <nav class="desktop-nav" aria-label="주요 메뉴">
         <a href="#features">기능</a>
         <a href="#commands">명령어</a>
+        <a href="/blog/">블로그</a>
         <a href="#setup">시작하기</a>
       </nav>
       <div class="header-actions">
-        <button class="login-trigger" id="developer-login-button" type="button">개발자 로그인</button>
-        <a class="button button-small button-outline bot-invite-link" href="#setup" data-locked-href="#setup" data-invite-url="https://discord.com/oauth2/authorize?client_id=1538335436341252096&amp;permissions=8&amp;scope=bot%20applications.commands" aria-label="개발자 로그인 후 봇 초대">Discord에 추가 <i data-lucide="arrow-up-right"></i></a>
+        <button class="login-trigger" id="developer-login-button" type="button">Discord 로그인</button>
+        <a class="button button-small button-outline bot-invite-link" href="#setup" data-locked-href="#setup" aria-label="허용된 Discord 계정으로 로그인 후 봇 초대">Discord에 추가 <i data-lucide="arrow-up-right"></i></a>
       </div>
     </header>
 
@@ -117,7 +118,7 @@
 
       <section id="setup" class="setup section-wrap">
         <div><p class="eyebrow">READY WHEN YOU ARE</p><h2>우리 서버에도<br>고양이조아를 초대해요.</h2><p>봇을 추가하고, 서버에 필요한 기능부터 시작해 보세요.</p></div>
-        <a class="button button-primary bot-invite-link" href="#setup" data-locked-href="#setup" data-invite-url="https://discord.com/oauth2/authorize?client_id=1538335436341252096&amp;permissions=8&amp;scope=bot%20applications.commands" aria-label="개발자 로그인 후 봇 초대">Discord에 추가 <i data-lucide="arrow-up-right"></i></a>
+        <a class="button button-primary bot-invite-link" href="#setup" data-locked-href="#setup" aria-label="허용된 Discord 계정으로 로그인 후 봇 초대">Discord에 추가 <i data-lucide="arrow-up-right"></i></a>
       </section>
       <section id="developer-panel" class="developer-panel section-wrap" hidden>
         <div><p class="eyebrow">DEVELOPER SPACE</p><h2>환영합니다, 개발자님.</h2><p>봇 운영 도구의 빠른 메뉴를 준비했습니다.</p></div>
@@ -131,22 +132,7 @@
     </footer>
   </div>
 
-  <div class="modal-backdrop" id="login-modal" hidden>
-    <section class="login-modal" role="dialog" aria-modal="true" aria-labelledby="login-title">
-      <button class="modal-close" id="close-login" type="button" aria-label="로그인 창 닫기"><i data-lucide="x"></i></button>
-      <div class="login-symbol"><i data-lucide="lock-keyhole"></i></div>
-      <p class="eyebrow">PRIVATE ACCESS</p>
-      <h2 id="login-title">개발자 로그인</h2>
-      <p class="login-description">봇 초대 링크를 열려면 비밀번호를 입력하세요.</p>
-      <form id="login-form">
-        <label for="developer-password">비밀번호</label>
-        <div class="password-field"><input id="developer-password" type="password" autocomplete="current-password" placeholder="비밀번호 입력" required><button id="toggle-password" type="button" aria-label="비밀번호 표시"><i data-lucide="eye"></i></button></div>
-        <p class="login-error" id="login-error" role="alert"></p>
-        <button class="button button-primary login-submit" type="submit">로그인 <i data-lucide="arrow-right"></i></button>
-      </form>
-    </section>
-  </div>
   <script src="https://unpkg.com/lucide@latest"></script>
-  <script src="app.js?v=20261002"></script>
+  <script src="app.js?v=20261003"></script>
 </body>
 </html>

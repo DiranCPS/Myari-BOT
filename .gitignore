@@ -1,0 +1,5 @@
+.env
+__pycache__/
+api/blog.sqlite3
+api/blog.sqlite3-shm
+api/blog.sqlite3-wal

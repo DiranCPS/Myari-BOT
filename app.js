@@ -1,44 +1,35 @@
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   if (window.lucide) lucide.createIcons();
 
   const tabs = document.querySelectorAll('.tab');
   const rows = document.querySelectorAll('.command-row');
-  const loginModal = document.querySelector('#login-modal');
-  const loginForm = document.querySelector('#login-form');
-  const passwordInput = document.querySelector('#developer-password');
-  const loginError = document.querySelector('#login-error');
   const developerPanel = document.querySelector('#developer-panel');
+  const loginButton = document.querySelector('#developer-login-button');
   const inviteLinks = document.querySelectorAll('.bot-invite-link');
-  const configuredApiUrl = document.querySelector('meta[name="bot-api-base-url"]')?.content.trim();
-  const apiBaseUrl = (configuredApiUrl || window.location.origin).replace(/\/$/, '');
+  const apiBaseUrl = (document.querySelector('meta[name="bot-api-base-url"]')?.content.trim()
+    || window.location.origin).replace(/\/$/, '');
+  let currentUser = null;
 
   tabs.forEach((tab) => {
     tab.addEventListener('click', () => {
-      tabs.forEach((item) => item.classList.remove('active'));
+      tabs.forEach((item) => {
+        item.classList.remove('active');
+        item.setAttribute('aria-selected', 'false');
+      });
       tab.classList.add('active');
+      tab.setAttribute('aria-selected', 'true');
       const selected = tab.dataset.tab;
       rows.forEach((row) => {
-        const visible = selected === 'all'
-          || row.dataset.category === selected;
-        row.style.display = visible ? 'grid' : 'none';
+        row.style.display = selected === 'all' || row.dataset.category === selected
+          ? 'grid'
+          : 'none';
       });
     });
   });
 
-  const closeLogin = () => {
-    loginModal.hidden = true;
-    loginError.textContent = '';
-    passwordInput.value = '';
-  };
-
-  const openLogin = () => {
-    loginModal.hidden = false;
-    passwordInput.focus();
-  };
-
   const activateInviteLinks = () => {
     inviteLinks.forEach((link) => {
-      link.href = link.dataset.inviteUrl;
+      link.href = `${apiBaseUrl}/api/invite`;
       link.removeAttribute('aria-label');
       link.classList.add('is-unlocked');
     });
@@ -47,60 +38,102 @@ document.addEventListener('DOMContentLoaded', () => {
   const deactivateInviteLinks = () => {
     inviteLinks.forEach((link) => {
       link.href = link.dataset.lockedHref || '#';
-      link.setAttribute('aria-label', '개발자 로그인 후 봇 초대');
+      link.setAttribute('aria-label', '허용된 Discord 계정으로 로그인 후 봇 초대');
       link.classList.remove('is-unlocked');
     });
   };
 
-  document.querySelector('#developer-login-button').addEventListener('click', openLogin);
-  inviteLinks.forEach((link) => {
-    link.addEventListener('click', (event) => {
-      if (!link.classList.contains('is-unlocked')) {
-        event.preventDefault();
-        openLogin();
-      }
-    });
-  });
-  document.querySelector('#close-login').addEventListener('click', closeLogin);
-  loginModal.addEventListener('click', (event) => {
-    if (event.target === loginModal) closeLogin();
-  });
-  document.querySelector('#toggle-password').addEventListener('click', (event) => {
-    const button = event.currentTarget;
-    passwordInput.type = passwordInput.type === 'password' ? 'text' : 'password';
-    button.setAttribute('aria-label', passwordInput.type === 'password' ? '비밀번호 표시' : '비밀번호 숨기기');
-  });
-  loginForm.addEventListener('submit', async (event) => {
-    event.preventDefault();
-    const submitButton = loginForm.querySelector('[type="submit"]');
-    submitButton.disabled = true;
-    loginError.textContent = '로그인 확인 중...';
+  const showLoginError = (message) => {
+    if (!loginButton) return;
+    loginButton.textContent = message;
+    window.setTimeout(() => {
+      loginButton.textContent = 'Discord 로그인';
+    }, 5000);
+  };
+
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('auth_error') === 'not_allowed') {
+    showLoginError('허용되지 않은 계정입니다');
+  } else if (params.get('auth_error') === 'login_required') {
+    showLoginError('Discord 로그인이 필요합니다');
+  } else if (params.has('auth_error')) {
+    showLoginError('Discord 로그인을 완료하지 못했습니다');
+  }
+  if (params.has('auth') || params.has('auth_error')) {
+    params.delete('auth');
+    params.delete('auth_error');
+    const query = params.toString();
+    window.history.replaceState({}, '', `${window.location.pathname}${query ? `?${query}` : ''}${window.location.hash}`);
+  }
+
+  loginButton?.addEventListener('click', async () => {
+    if (!currentUser) {
+      window.location.assign(`${apiBaseUrl}/api/auth/discord`);
+      return;
+    }
     try {
-      const response = await fetch(`${apiBaseUrl}/api/login`, {
+      const response = await fetch(`${apiBaseUrl}/api/auth/logout`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          password: passwordInput.value,
-        }),
+        credentials: 'include',
       });
-      if (!response.ok) {
-        loginError.textContent = response.status === 429
-          ? '로그인 시도가 너무 많습니다. 잠시 후 다시 시도해주세요.'
-          : '비밀번호가 올바르지 않습니다.';
-        return;
-      }
-      activateInviteLinks();
-      closeLogin();
-      developerPanel.hidden = false;
-      developerPanel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      if (!response.ok) throw new Error(`Logout failed: ${response.status}`);
+      currentUser = null;
+      if (developerPanel) developerPanel.hidden = true;
+      deactivateInviteLinks();
+      loginButton.textContent = 'Discord 로그인';
     } catch {
-      loginError.textContent = '인증 서버에 연결할 수 없습니다. API 주소와 서버 상태를 확인해주세요.';
-    } finally {
-      submitButton.disabled = false;
+      showLoginError('로그아웃하지 못했습니다');
     }
   });
-  document.querySelector('#developer-logout').addEventListener('click', () => {
-    developerPanel.hidden = true;
-    deactivateInviteLinks();
+
+  inviteLinks.forEach((link) => {
+    link.addEventListener('click', (event) => {
+      if (link.classList.contains('is-unlocked')) return;
+      event.preventDefault();
+      window.location.assign(`${apiBaseUrl}/api/auth/discord`);
+    });
   });
+
+  document.querySelector('#developer-logout')?.addEventListener('click', async () => {
+    try {
+      const response = await fetch(`${apiBaseUrl}/api/auth/logout`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      if (!response.ok) throw new Error(`Logout failed: ${response.status}`);
+      currentUser = null;
+      developerPanel.hidden = true;
+      deactivateInviteLinks();
+      if (loginButton) {
+        loginButton.textContent = 'Discord 로그인';
+        loginButton.removeAttribute('title');
+      }
+    } catch {
+      showLoginError('로그아웃하지 못했습니다');
+    }
+  });
+
+  try {
+    const response = await fetch(`${apiBaseUrl}/api/auth/me`, {
+      credentials: 'include',
+      cache: 'no-store',
+    });
+    if (!response.ok) return;
+    const user = await response.json();
+    if (!user.authorized) return;
+
+    currentUser = user;
+    activateInviteLinks();
+    if (developerPanel) {
+      developerPanel.hidden = false;
+      const heading = developerPanel.querySelector('h2');
+      if (heading) heading.textContent = `환영합니다, ${user.username}님.`;
+    }
+    if (loginButton) {
+      loginButton.textContent = `${user.username} · 로그아웃`;
+      loginButton.title = 'Discord 로그아웃';
+    }
+  } catch {
+    showLoginError('로그인 서버에 연결할 수 없습니다');
+  }
 });

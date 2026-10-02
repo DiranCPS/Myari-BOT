@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Discord 서버 운영과 고양이조아 봇 활용 팁을 소개합니다.">
+  <meta name="theme-color" content="#111216">
+  <meta name="bot-api-base-url" content="https://api.myaribot.mcv.kr">
+  <title>블로그 — 고양이조아 Bot</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../styles.css?v=20261003">
+  <link rel="stylesheet" href="blog.css?v=20261003">
+</head>
+<body>
+  <a class="skip-link" href="#main">본문으로 건너뛰기</a>
+  <header class="site-header">
+    <a class="brand" href="/" aria-label="고양이조아 Bot 홈">
+      <span class="brand-mark"><i data-lucide="cat"></i></span>
+      <span>고양이조아 <b>BOT</b></span>
+    </a>
+    <nav class="desktop-nav" aria-label="주요 메뉴">
+      <a href="/">홈</a>
+      <a href="/#features">기능</a>
+      <a href="/blog/" aria-current="page">블로그</a>
+    </nav>
+    <div class="header-actions">
+      <span class="blog-user" id="blog-user" hidden></span>
+      <button class="login-trigger" id="blog-login" type="button">Discord 로그인</button>
+      <button class="button button-small button-outline" id="blog-logout" type="button" hidden>로그아웃</button>
+    </div>
+  </header>
+
+  <main id="main" class="blog-main section-wrap">
+    <section class="blog-intro">
+      <p class="eyebrow">MYARI BOT / NOTES</p>
+      <h1>서버를 더 잘 운영하는<br><span>작은 이야기.</span></h1>
+      <p>Discord 서버 운영 팁과 고양이조아 봇의 소식을 전합니다.</p>
+    </section>
+
+    <section class="blog-toolbar" aria-label="블로그 관리">
+      <div><span class="blog-overline">LATEST ARTICLES</span><h2>최근 게시물</h2></div>
+      <button class="button button-primary" id="new-post" type="button" hidden><i data-lucide="square-pen"></i> 글 작성</button>
+    </section>
+
+    <p class="blog-notice" id="blog-notice" role="status"></p>
+    <section class="post-grid" id="post-grid" aria-live="polite"></section>
+    <article class="post-reader" id="post-reader" hidden></article>
+
+    <section class="post-editor" id="post-editor" hidden>
+      <div class="editor-heading"><div><p class="eyebrow">EDITOR</p><h2 id="editor-title">새 글 작성</h2></div><button class="text-button" id="cancel-edit" type="button">취소</button></div>
+      <form id="post-form">
+        <label for="post-title">제목</label>
+        <input id="post-title" name="title" maxlength="120" required placeholder="글 제목을 입력하세요">
+        <label for="post-slug">주소 (영문·숫자·하이픈)</label>
+        <input id="post-slug" name="slug" maxlength="80" pattern="[a-z0-9]+(-[a-z0-9]+)*" required placeholder="discord-server-tips">
+        <label for="post-category">분류</label>
+        <input id="post-category" name="category" maxlength="40" placeholder="서버 운영">
+        <label for="post-excerpt">요약</label>
+        <textarea id="post-excerpt" name="excerpt" maxlength="300" rows="3" placeholder="목록에 표시할 간단한 소개"></textarea>
+        <label for="post-content">본문 <span>간단한 Markdown 사용 가능</span></label>
+        <textarea id="post-content" name="content" maxlength="50000" rows="16" required placeholder="# 소제목&#10;&#10;게시물 내용을 작성하세요."></textarea>
+        <div class="editor-actions">
+          <select id="post-status" name="status" aria-label="게시 상태"><option value="published">게시하기</option><option value="draft">임시 저장</option></select>
+          <button class="button button-primary" id="save-post" type="submit">저장</button>
+        </div>
+      </form>
+    </section>
+  </main>
+
+  <footer class="site-footer section-wrap">
+    <a class="brand" href="/"><span class="brand-mark"><i data-lucide="cat"></i></span><span>고양이조아 <b>BOT</b></span></a>
+    <span>더 나은 커뮤니티를 위한 도구.</span><a href="#main">맨 위로 <i data-lucide="arrow-up"></i></a>
+  </footer>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="blog.js?v=20261003"></script>
+</body>
+</html>

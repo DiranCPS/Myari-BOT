@@ -1,0 +1,32 @@
+services:
+  - type: web
+    name: myari-blog-api
+    runtime: python
+    plan: starter
+    rootDir: api
+    buildCommand: pip install -r requirements.txt
+    startCommand: python server.py
+    healthCheckPath: /healthz
+    disk:
+      name: myari-blog-data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: BLOG_DATABASE_PATH
+        value: /var/data/blog.sqlite3
+      - key: DISCORD_CLIENT_ID
+        value: "1538335436341252096"
+      - key: DISCORD_CLIENT_SECRET
+        sync: false
+      - key: DISCORD_REDIRECT_URI
+        value: https://api.myaribot.mcv.kr/api/auth/discord/callback
+      - key: BLOG_SESSION_SECRET
+        generateValue: true
+      - key: COOKIE_DOMAIN
+        value: .myaribot.mcv.kr
+      - key: FRONTEND_URL
+        value: https://myaribot.mcv.kr
+      - key: SITE_ALLOWED_ORIGINS
+        value: https://myaribot.mcv.kr
+      - key: SITE_ALLOWED_USER_IDS
+        value: 1230101255045513228,1462059321860034593,1501946308729245952
