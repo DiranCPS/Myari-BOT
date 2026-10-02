@@ -1,7 +1,7 @@
 window.myariSupabase = null;
 
-const supabaseUrl = ''; // Supabase Project URL
-const supabaseAnonKey = ''; // anon/publishable key; never use service_role here
+const supabaseUrl = 'https://wevaawuhhtqlebmehstd.supabase.co';
+const supabaseAnonKey = 'sb_publishable_nzB4WhsOOoX1cmpNRPEwDA_3-4LQt3u';
 
 if (
   window.supabase?.createClient
