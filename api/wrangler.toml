@@ -1,0 +1,18 @@
+name = "myari-blog-api"
+main = "worker.js"
+compatibility_date = "2026-10-02"
+workers_dev = true
+
+[vars]
+FRONTEND_URL = "https://myaribot.mcv.kr"
+DISCORD_CLIENT_ID = "1538335436341252096"
+DISCORD_REDIRECT_URI = "https://api.myaribot.mcv.kr/api/auth/discord/callback"
+COOKIE_DOMAIN = ".myaribot.mcv.kr"
+SITE_ALLOWED_ORIGINS = "https://myaribot.mcv.kr"
+SITE_ALLOWED_USER_IDS = "1230101255045513228,1462059321860034593,1501946308729245952"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "myari-blog"
+database_id = "REPLACE_WITH_D1_DATABASE_ID"
+migrations_dir = "migrations"

@@ -3,3 +3,5 @@ __pycache__/
 api/blog.sqlite3
 api/blog.sqlite3-shm
 api/blog.sqlite3-wal
+api/.wrangler/
+api/.dev.vars
