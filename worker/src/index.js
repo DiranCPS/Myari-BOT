@@ -2,6 +2,7 @@ import {
   S3Client, CreateMultipartUploadCommand, UploadPartCommand,
   CompleteMultipartUploadCommand, AbortMultipartUploadCommand,
   ListObjectsV2Command, DeleteObjectsCommand, GetObjectCommand,
+  HeadObjectCommand, DeleteObjectCommand,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
@@ -136,6 +137,11 @@ async function handle(request, env) {
       await client.send(new CompleteMultipartUploadCommand({
         Bucket: bucket, Key: key, UploadId: uploadId, MultipartUpload: { Parts: completedParts },
       }));
+      const stored = await client.send(new HeadObjectCommand({ Bucket: bucket, Key: key }));
+      if (Number(stored.ContentLength) !== size) {
+        await client.send(new DeleteObjectCommand({ Bucket: bucket, Key: key }));
+        return json(request, { error: "저장된 파일 크기가 요청과 달라 업로드를 취소했습니다." }, 400);
+      }
       const downloadUrl = await getSignedUrl(client, new GetObjectCommand({ Bucket: bucket, Key: key }), {
         expiresIn: 72 * 60 * 60,
       });
