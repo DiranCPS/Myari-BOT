@@ -122,6 +122,16 @@
       <section id="developer-panel" class="developer-panel section-wrap" hidden>
         <div><p class="eyebrow">DEVELOPER SPACE</p><h2>환영합니다, 개발자님.</h2><p>봇 운영 도구의 빠른 메뉴를 준비했습니다.</p></div>
         <div class="developer-tools"><span><i data-lucide="server"></i> 서버 상태</span><strong>정상 운영 중</strong><button id="developer-logout" type="button">로그아웃</button></div>
+        <div id="file-upload-tool" class="file-upload-tool" hidden>
+          <div><p class="eyebrow">TEMPORARY FILE SHARE</p><h3>파일 업로드</h3><p>최대 10GB · 업로드 후 3일 뒤 자동 삭제</p></div>
+          <label for="file-upload-channel">Discord 채널 ID</label>
+          <input id="file-upload-channel" inputmode="numeric" autocomplete="off" placeholder="링크를 게시할 채널 ID">
+          <label for="file-upload-input">파일 선택</label>
+          <input id="file-upload-input" type="file">
+          <button id="file-upload-submit" class="button button-primary" type="button">업로드하고 Discord에 링크 게시</button>
+          <progress id="file-upload-progress" value="0" max="100"></progress>
+          <p id="file-upload-status" role="status" aria-live="polite"></p>
+        </div>
       </section>
     </main>
 
@@ -135,5 +145,6 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js"></script>
   <script src="app.js?v=supabase"></script>
+  <script src="upload.js?v=1"></script>
 </body>
 </html>

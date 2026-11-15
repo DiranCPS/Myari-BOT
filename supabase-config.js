@@ -10,3 +10,6 @@ if (
 ) {
   window.myariSupabase = window.supabase.createClient(supabaseUrl, supabaseAnonKey);
 }
+
+// Set this to the deployed Cloudflare Worker URL.
+window.myariUploadApiUrl = '';

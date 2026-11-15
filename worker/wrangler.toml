@@ -1,0 +1,7 @@
+name = "myari-file-upload"
+main = "src/index.js"
+compatibility_date = "2026-11-15"
+compatibility_flags = ["nodejs_compat"]
+
+[triggers]
+crons = ["*/15 * * * *"]

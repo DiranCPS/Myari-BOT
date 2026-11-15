@@ -236,3 +236,31 @@ h1, h2, h3, p { margin-top: 0; }
   .site-footer>span { order: 3; flex-basis: 100%; }
   .login-modal { padding: 28px 23px; }
 }
+
+
+.file-upload-tool {
+  display: grid;
+  gap: 12px;
+  width: min(100%, 520px);
+  margin: 18px 0 0 auto;
+  padding: 22px;
+  border: 1px solid var(--line, #34363d);
+  border-radius: 18px;
+  background: var(--surface, #191a20);
+}
+.file-upload-tool[hidden] { display: none; }
+.file-upload-tool h3 { margin: 0 0 6px; }
+.file-upload-tool p { margin: 0; }
+.file-upload-tool label { font-size: 0.9rem; font-weight: 600; }
+.file-upload-tool input {
+  width: 100%;
+  min-width: 0;
+  padding: 11px 12px;
+  color: inherit;
+  border: 1px solid var(--line, #34363d);
+  border-radius: 10px;
+  background: var(--background, #111216);
+}
+#file-upload-progress { width: 100%; height: 12px; accent-color: #8c7bff; }
+#file-upload-status { min-height: 1.5em; overflow-wrap: anywhere; color: #aeb5c2; }
+#file-upload-status[data-error="true"] { color: #ff8585; }
